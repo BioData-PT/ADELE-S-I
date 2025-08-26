@@ -1,0 +1,14 @@
+[
+    {
+        "iss": "https://rems.gdi.biodata.pt/",
+        "jku": "https://rems.gdi.biodata.pt/api/jwk"
+    },
+    {
+        "iss": "https://login.aai.lifescience-ri.eu/oidc/",
+        "jku": "https://login.aai.lifescience-ri.eu/oidc/jwk"
+    },
+    {
+        "iss": "https://kc.portal.gdi.biodata.pt/",
+        "jku": "https://kc.portal.gdi.biodata.pt/oidc/jwk"
+    }
+]

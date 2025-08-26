@@ -33,10 +33,13 @@ services:
         condition: service_completed_successfully
     environment:
       - OIDC_ID=${auth_ELIXIR_ID}
-      - OIDC_PROVIDER=http://${DOCKERHOST:-localhost}:8080/oidc/
+      #- OIDC_PROVIDER=http://${DOCKERHOST:-localhost}:8080/oidc/ #orig
+      #- OIDC_PROVIDER=https://login.aai.lifescience-ri.eu/oidc/
+      - OIDC_PROVIDER=$OIDC_PROVIDER
       - OIDC_SECRET=${auth_ELIXIR_SECRET}
       - OIDC_JWKPATH=jwk
-      - OIDC_REDIRECTURL=http://localhost:8085/oidc/login
+      #- OIDC_REDIRECTURL=http://localhost:8085/oidc/login
+      - OIDC_REDIRECTURL=$OIDC_REDIRECTURL
       - LOG_LEVEL=debug
       - RESIGNJWT=false
     extra_hosts:
@@ -117,9 +120,10 @@ services:
     image: minio/minio:RELEASE.2023-10-25T06-33-25Z
     networks:
       - secure
+      - tre-core
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     restart: always
     volumes:
       - s3data:/data
@@ -138,7 +142,9 @@ services:
     environment:
       - DB_PASSWORD=${download_DB_PASSWORD}
       - DB_USER=${download_DB_USER}
-      - OIDC_CONFIGURATION_URL=http://${DOCKERHOST:-dockerhost}:8080/oidc/.well-known/openid-configuration
+        #- OIDC_CONFIGURATION_URL=http://${DOCKERHOST:-dockerhost}:8080/oidc/.well-known/openid-configuration
+      #- OIDC_CONFIGURATION_URL=https://login.aai.lifescience-ri.eu/oidc/.well-known/openid-configuration
+      - OIDC_CONFIGURATION_URL=$OIDC_CONFIGURATION_URL
       - ARCHIVE_TYPE=s3seekable
     extra_hosts:
       - ${DOCKERHOST:-dockerhost}:host-gateway
@@ -146,6 +152,7 @@ services:
     networks:
       - public
       - secure
+      - tre-core
     ports:
       - 8443:8443
     restart: always
@@ -277,13 +284,15 @@ services:
       - BROKER_USER=${inbox_BROKER_USER}
       - DB_PASSWORD=${inbox_DB_PASSWORD}
       - DB_USER=${inbox_DB_USER}
-      - SERVER_JWTPUBKEYURL=http://${DOCKERHOST:-dockerhost}:8080/oidc/jwk
+      #- SERVER_JWTPUBKEYURL=http://${DOCKERHOST:-dockerhost}:8080/oidc/jwk
+      - SERVER_JWTPUBKEYURL=$SERVER_JWTPUBKEYURL
     extra_hosts:
       - ${DOCKERHOST:-dockerhost}:host-gateway
     image: ghcr.io/neicnordic/sensitive-data-archive:v0.3.25
     networks:
       - public
       - secure
+      - tre-core
     ports:
       - "8000:8000"
     restart: always
@@ -305,6 +314,31 @@ services:
       - ${CONFIG_FILEPATH}:/config.yaml
       - shared:/shared
       - cacert:/cacert
+  sda-api:
+    #container_name: sda-api
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    depends_on:
+      credentials:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+    environment:
+      - MQ_URL=rabbitmq:15672
+    networks:
+      - secure
+      - tre-core
+    ports:
+      - "127.0.0.1:5100:5100"
+    restart: always
+    volumes:
+      - ./s3cmd.conf:/s3cmd.conf
+      - ./scripts/sda-admin:/scripts/sda-admin
 
 volumes:
   cacert:
@@ -315,3 +349,5 @@ volumes:
 networks:
   public:
   secure:
+  tre-core:
+    external: True
