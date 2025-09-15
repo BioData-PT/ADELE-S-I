@@ -77,7 +77,6 @@ openssl x509 \
 # Create certificate for clients.
 openssl req \
 	-config "$script_dir/ssl.cnf" \
-	-extensions client_cert \
 	-keyout client.key \
 	-new \
 	-newkey rsa:4096 \
