@@ -36,39 +36,39 @@ fi
 
 # Create CA certificate.
 openssl req \
-	-config "$script_dir/ssl.cnf" \
-	-extensions v3_ca \
-	-keyout ca.key \
-	-new \
-	-nodes \
-	-out ca.csr \
-	-sha256
-openssl req \
-	-config "$script_dir/ssl.cnf" \
-	-days 7300 \
-	-extensions v3_ca \
-	-key ca.key \
-	-new \
-	-nodes \
-	-out ca.crt \
-	-sha256 \
-	-x509
+    -config "$script_dir/ssl.cnf" \
+    -extensions v3_ca \
+    -keyout ca.key \
+    -new \
+    -nodes \
+    -out ca.crt \
+    -sha256 \
+    -x509 \
+    -days 7300
+
+
+if [ ! -f ca.crt ] || [ ! -f ca.key ]; then
+    echo "CA certificate or key not created!"
+    exit 1
+fi
+
+openssl x509 -in ca.crt -noout -text
+
 
 # Create certificate for servers.
 openssl req \
 	-config "$script_dir/ssl.cnf" \
-	-extensions server_cert \
 	-keyout server.key \
 	-new \
 	-newkey rsa:4096 \
 	-nodes \
-	-out server.csr 
+	-out server.csr \
+	-subj '/CN=server'
 openssl x509 \
 	-CA ca.crt \
 	-CAcreateserial \
 	-CAkey ca.key \
 	-days 1200 \
-	-extensions server_cert \
 	-extfile "$script_dir/ssl.cnf" \
 	-in server.csr \
 	-out server.crt \
@@ -77,7 +77,6 @@ openssl x509 \
 # Create certificate for clients.
 openssl req \
 	-config "$script_dir/ssl.cnf" \
-	-extensions client_cert \
 	-keyout client.key \
 	-new \
 	-newkey rsa:4096 \
@@ -94,6 +93,16 @@ openssl x509 \
 	-in client.csr \
 	-out client.crt \
 	-req
+
+openssl verify -CAfile ca.crt server.crt client.crt
+if [ $? -ne 0 ]; then
+	echo "Error: Certificate verification failed!" >&2
+	exit 1
+fi
+
+openssl x509 -in server.crt -noout -text | \
+  grep -E 'Authority Key Identifier|Subject Alternative Name' -A2
+
 
 # Fix permissions and ownership.
 cp server.key mq.key
