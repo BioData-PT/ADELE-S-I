@@ -51,6 +51,8 @@ services:
     ports:
       - 8085:8080
     restart: always
+    networks:
+      - tre-core
 
   rabbitmq:
     container_name: rabbitmq
