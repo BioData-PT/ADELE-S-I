@@ -53,8 +53,7 @@ services:
     networks:
       - tre-core
     restart: always
-    networks:
-      - tre-core
+
 
   rabbitmq:
     container_name: rabbitmq
