@@ -74,9 +74,10 @@ services:
     image: ghcr.io/neicnordic/sensitive-data-archive:v0.3.25-rabbitmq
     networks:
       - secure
+    restart: always
     ports:
       - 15672:15672
-    restart: always
+    
 
   postgres:
     container_name: postgres
